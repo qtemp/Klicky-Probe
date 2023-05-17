@@ -1,33 +1,28 @@
 # Klipper macros
 
-These macros are  based on the great Annex magprobe dockable probe macros "#Originally developed by Mental, modified for better use on K-series printers by RyanG and Trails", kudos to them.
-That macro as since evolved into a klipper plugin that currently is pending inclusion in klipper, more information [here](https://github.com/Annex-Engineering/Quickdraw_Probe/tree/main/Klipper_Macros)
-
-Would alse like to thank the Voron discord community and VoronDesign for all the work, suggestions and support that they have given to improve on the macros.
+These macros are based on jlas1's Klicky-Probe Macros.
 
 ## Updating from an earlier version
 
 While you should read these instructions to the end, as the necessary helper functions are now split on different files and it's better explained below, as a current user of the klicky macros, it's easier to configure.
 
-The first macro on the old klicky-probe.cfg contained all the necessary variables, you should the values you changed one by one to the new klicky-variables.cfg, the most important are these ones:
-
 ```ini
 # if you do not have any of these variables, read the explanation on klicky-variables.cfg and the setup of the macros on your respective printer, this is a quick start quide
+variable_homing_order           # set this array based on the order of axis homing ['X', 'Y', 'Z']
+variable_attach_probe_before_z_home # set this to true to attach the probe before the z axis is homed
+variable_detach_probe_after_z_home # set this to true to detach the probe after the z axis is homed
+
+variable_attach_commands        # Array of commands to execute to attach the probe (e.g. ["_Safe_Z", "G0 X316 F3000", "G0 X258 F3000"] )
+variable_detach_commands        # Array of commands to execute to detach the probe (e.g. ["_Safe_Z", "G0 X316 F3000", "G0 Z5 F1200", "G0 X258 F3000"] )
+variable_version                # set this to 2
+
 variable_enable_z_hop           # set this to false for beds that fall significantly under gravity (almost to Z max)
 variable_max_bed_y              # bed max y size
 variable_max_bed_x              # bed max x size
 
 variable_z_endstop_x            # copy this value over your old file
 variable_z_endstop_y            # copy this value over your old file
-
-variable_docklocation_[x,y,z]   # copy this value over your old file
-Variable_dockmove_[x,y,z]       # use 40,0,0 it's the old default
-Variable_attachmove_[x,y,z]     # use 0,30,0 it's the old default
 ```
-
-Now if you use auto-z calibration, you also should copy z-calibration.cfg to klicky-z-calibration.cfg and remove the z-calibration.cfg include in printer.cfg.
-
-
 
 ## New installation
 
@@ -62,13 +57,7 @@ Some printers, like the Voron v0 or Tiny-M don't have the probe as a standard co
 
 ## printer.cfg configuration 
 
-Download the appropriate files (or the zip containing them all and delete the ones that are not relevant) and upload it to your klipper Config folder.
-
-```bash
-cd ~/klipper_config/
-wget https://raw.githubusercontent.com/jlas1/Klicky-Probe/main/Klipper_macros/Klipper_macros.zip
-unzip Klipper_macros.zip
-```
+Download the appropriate files and upload it to your klipper Config folder.
 
 Check the klicky-probe.cfg, remove or comment the macros that are not required for your printer or that you do not want to implement.
 Edit klicky-variables.cfg ([there are printers specific recommendations on the printer configuration page](https://github.com/jlas1/Klicky-Probe#printers-with-detailed-instructions-and-specific-parts-by-support-order)) for klicky to operate properly.
@@ -98,9 +87,13 @@ If however you would like to reduce the times that the toolhead attaches and doc
 
 When you don't need the probe attached anymore, run Dock_Probe_Unlock to dock and unlock the probe.
 
+## Helper Macros
+
+**\_Safe_Z** Moves to a Safe Z location
+
 ## Pre and Post macros for dock operations
 
-If your setup requires a custom move, a macro to be called before attaching and docking, there are two macros **\_DeployDock** and **\_RetractDock** that are executed (if they are configured) when it's required for the dock to be ready for docking and attachment operations.
+If your setup uses a servo based dock, there are two macros (**\_DeployDock** and **\_RetractDock**) that are executed (if they are configured) when it's required for the dock to be ready for docking and attachment operations.
 
 Currently, thanks to Kyleisah there is also support to use a simple servo setup, when a certain angle deploys the dock and another retracts it, you can find the following variables on klicky-variables.cfg.
 
@@ -145,80 +138,3 @@ Thanks to foonietunes we now have status leds support (specially useful for SB l
 If you are using sensorless homing, and have your own X and/or Y homing macros, you can use override the klicky macros behavior with your very own _HOME_X and _HOME_Y macros.
 
 If they exist on your klipper configuration, klicky macro will use them instead of the default G28 commands.
-
-## Euclid support
-
-To support euclid side dock and undock, try these values
-
-```python
-#Attach move. final toolhead movement to attach the probe on the mount
-#it's a relative move
-Variable_attachmove_x:          -70
-Variable_attachmove_y:            0
-Variable_attachmove_z:            0
-
-#Attach move2
-Variable_attachmove2_x:          0
-Variable_attachmove2_y:         40
-Variable_attachmove2_z:          0
-
-#Dock move, final toolhead movement to release the probe on the dock
-#it's a relative move
-Variable_dockmove_x:              0
-Variable_dockmove_y:            -40
-Variable_dockmove_z:              0
-```
-
-**you need to check what is the Z height of the Euclid Dock to possibly update the z moves above**
-
-## Advanced users
-
-**Beware going forward, you will leave the safety that the macros provide**
-
-I recognize that some users are very technical and may want to write custom macros, so here are the only commands that you need to  attach and dock the probe, without any fail safes or checks.
-
-### Probe attach commands
-
-```python
-# Probe entry location
-G0 X{docklocation_x|int - attachmove_x|int - attachmove2_x|int} Y{docklocation_y|int - attachmove_y|int - attachmove2_y} F{travel_feedrate}
-# Attach probe
-G0 X{docklocation_x|int - attachmove2_x|int} Y{docklocation_y|int - attachmove2_y} F{travel_feedrate}
-G0 X{docklocation_x} Y{docklocation_y} F{dock_feedrate}
-# Probe exit location
-G0 X{docklocation_x|int - attachmove_x|int} Y{docklocation_y|int - attachmove_y|int} F{release_feedrate}
-```
-
-### Probe dock commands
-
-```python
-# Probe entry location
-G0 X{docklocation_x|int - attachmove_x|int} Y{docklocation_y|int - attachmove_y|int} F{travel_feedrate}
-# Drop Probe to Probe location
-G0 X{docklocation_x} Y{docklocation_y} F{dock_feedrate}
-# Probe decoupling
-G0 X{docklocation_x|int + dockmove_x|int} Y{docklocation_y|int + dockmove_y|int} F{release_feedrate}
-G0 X{docklocation_x|int + dockmove_x|int - attachmove_x|int} Y{docklocation_y|int + dockmove_y|int - attachmove_y|int} F{release_feedrate}
-```
-
-The typical variables values are:
-
-```ini
-variable_travel_speed:          100    # how fast all other travel moves will be performed when running these macros
-variable_dock_speed:             50    # how fast should the toolhead move when docking the probe for the final movement
-variable_release_speed:          75    # how fast should the toolhead move to release the hold of the magnets after docking
-#Dock move (if the dock is mounted on the back extrusion, these values can be left untouched)
-Variable_dockmove_x:              0    # Final toolhead movement to release
-Variable_dockmove_y:             40    # the probe on the dock
-Variable_dockmove_z:              0    # (can be negative)
-#Attach move (if the dock is mounted on the back extrusion, these values can be left untouched)
-Variable_attachmove_x:           30    # Final toolhead movement to Dock
-Variable_attachmove_y:            0    # the probe on the dock
-Variable_attachmove_z:            0    # (can be negative)
-
-Variable_attachmove2_x:           0    # intermediate toolhead movement to attach
-Variable_attachmove2_y:           0    # the probe on the dock (can be negative)
-Variable_attachmove2_z:           0    # (to be used as a last move before attaching the probe, suitable for Euclid)
-```
-
-**Again, be advised that these will not raize the bed to avoid hitting it, won't check if the probe is docked or attached. USE EXTREME CAUTION**
