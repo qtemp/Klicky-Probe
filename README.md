@@ -7,7 +7,7 @@ variable_safe_z is still utilized to make sure that we are in a safe location be
 
 # New variables (All are REQUIRED):
 
-## homing_override variabes:
+## homing_override variables:
 - variable_homing_order: ['X', 'Y', 'Z']
   - This is to allow you to control your axis homing order exactly.  If you specify G28 with only one axis then only that axis will be homed.  If you specify two axis, such as G28 X Y, then those will be both homed in the order established by the variable_homing_order.
 
